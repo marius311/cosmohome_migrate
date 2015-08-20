@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+
+# migrate DB:
+# note: place cosmohome.sql in cosmohome_migrate directory
+if [[ -f /root/migrate/cosmohome.sql ]] && [[ "$*" != *"--no-db"* ]]; then
+    mysql -h mysql -e "create database cosmohome;"
+    mysql -h mysql cosmohome < /root/migrate/cosmohome.sql
+    echo 16160 > /root/projects/cosmohome/db_revision
+    (cd /root/boinc/tools && ./upgrade /root/projects/cosmohome)
+fi
+
+# migrate server files:
+# note: place existing cosmohome directory in cosmohome_migrate/cosmohome
+# can tar cosmohome with: tar --exclude ./archives --exclude ./html/stats_archive --exclude ./html/cache --exclude ./log_darkmatter --exclude ./test_output -cvf cosmohome.tgz .
+if [[ -d /root/migrate/cosmohome ]] && [[ "$*" != *"--no-files"* ]]; then
+    cp -rf /root/migrate/cosmohome/{download,upload} /root/projects/cosmohome
+    cp -rf /root/migrate/cosmohome/html/user_profile /root/projects/cosmohome/html
+fi
+
+
+# upgrade news forum
+if [[ "$*" != *"--no-news"* ]]; then
+    cp -rf /root/migrate/project_news.inc /root/projects/cosmohome/html/project
+    cp -rf /root/migrate/create_forums.php /root/projects/cosmohome/html/ops/create_forums.php
+
+    (cd /root/projects/cosmohome/html/ops && 
+        php create_forums.php && 
+        php news_convert.php &&
+        rm ../projects/project_news.inc)
+fi
