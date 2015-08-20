@@ -28,5 +28,5 @@ if [[ "$*" != *"--no-news"* ]]; then
     (cd /root/projects/cosmohome/html/ops && 
         php create_forums.php && 
         php news_convert.php &&
-        rm ../projects/project_news.inc)
+        rm ../project/project_news.inc)
 fi
